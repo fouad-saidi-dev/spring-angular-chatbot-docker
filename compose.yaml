@@ -1,10 +1,7 @@
 services:
-  ollama:
-    image: 'ollama/ollama:latest'
-    ports:
-      - '11434'
   pgvector:
     image: 'pgvector/pgvector:pg16'
+    container_name: pgdb-store
     environment:
       - 'POSTGRES_DB=dbCryptoCurrency'
       - 'POSTGRES_PASSWORD=1234'
@@ -13,3 +10,30 @@ services:
       - "org.springframework.boot.service-connection=postgres"
     ports:
       - '5432:5432'
+    networks:
+      - chatbot-net
+  chatbot-back:
+    container_name: chatbot-back
+    build: ./backend
+    ports:
+      - '8074:8074'
+    environment:
+      - DB_URL=jdbc:postgresql://pgdb-store:5432/dbCryptoCurrency
+    depends_on:
+      - pgvector
+    networks:
+      - chatbot-net
+  chatbot-front:
+    container_name: chatbot-front
+    build: ./frontend
+    ports:
+      - '8086:80'
+    depends_on:
+      - chatbot-back
+    networks:
+      - chatbot-net
+networks:
+  chatbot-net:
+    driver: bridge
+volumes:
+  chatbot_data:
